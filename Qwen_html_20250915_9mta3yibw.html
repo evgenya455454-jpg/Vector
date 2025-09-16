@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Vector — Крипто-биржа фриланса</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: touch;
+            font-family: system-ui, -apple-system, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+            background-color: #f0f4ff;
+        }
+        body.dark {
+            background-color: #120e2d;
+            color: #f0f0f0;
+        }
+        body.dark .card {
+            background-color: #1e1a3a;
+            border-color: #2d294a;
+        }
+        body.dark .bg-white {
+            background-color: #120e2d;
+        }
+        body.dark .border-gray-100 {
+            border-color: #2d294a;
+        }
+        body.dark .text-gray-600 {
+            color: #bbb;
+        }
+        body.dark .bg-gray-100 {
+            background-color: #1e1a3a;
+        }
+        body.dark .text-gray-700 {
+            color: #ddd;
+        }
+        body.dark input {
+            background-color: #1e1a3a;
+            border-color: #2d294a;
+            color: #fff;
+        }
+
+        .card {
+            transition: all 0.2s ease;
+            border-radius: 12px;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+        }
+        .tab-active {
+            background: linear-gradient(90deg, #6e44ff, #9c6bff);
+            color: white;
+        }
+        .tab-inactive {
+            background-color: #e6e0ff;
+            color: #6e44ff;
+        }
+        body.dark .tab-inactive {
+            background-color: #1e1a3a;
+            color: #b8a4ff;
+        }
+        .category-tag {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .nav-item {
+            @apply flex flex-col items-center justify-center p-1 text-gray-600 text-xs transition-colors;
+        }
+        .nav-item.active {
+            @apply text-purple-600;
+        }
+        body.dark .nav-item.active {
+            @apply text-purple-400;
+        }
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        /* Увеличенная нижняя навигация */
+        .bottom-nav {
+            height: 68px;
+            background-color: #ffffff;
+            border-top: 1px solid #e0d8ff;
+        }
+        body.dark .bottom-nav {
+            background-color: #120e2d;
+            border-top: 1px solid #1e1a3a;
+        }
+        .nav-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 85px;
+            height: 100%;
+            font-size: 12px;
+            color: #555;
+            font-weight: 500;
+        }
+        .nav-button.active {
+            color: #6e44ff;
+        }
+        body.dark .nav-button.active {
+            color: #b8a4ff;
+        }
+        .nav-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%;
+            max-width: 420px;
+            margin: 0 auto;
+        }
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 4px;
+        }
+        /* Лаконичный фильтр */
+        .compact-filter {
+            display: flex;
+            overflow-x: auto;
+            gap: 6px;
+            padding: 6px 0;
+            scrollbar-width: none;
+        }
+        .compact-filter::-webkit-scrollbar {
+            display: none;
+        }
+        .filter-tag {
+            flex-shrink: 0;
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            background-color: #e6e0ff;
+            color: #6e44ff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-tag.active {
+            background: linear-gradient(90deg, #6e44ff, #9c6bff);
+            color: white;
+        }
+        body.dark .filter-tag {
+            background-color: #1e1a3a;
+            color: #b8a4ff;
+        }
+        body.dark .filter-tag.active {
+            background: linear-gradient(90deg, #6e44ff, #9c6bff);
+            color: white;
+        }
+        /* Мягкий фиолетовый логотип */
+        .vector-logo {
+            background: linear-gradient(135deg, #6e44ff 0%, #9c6bff 100%);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* Строгие значки */
+        .strict-icon {
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body class="font-sans text-gray-900 antialiased">
+    <div id="app" class="max-w-lg mx-auto bg-white min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <div class="bg-white dark:bg-[#120e2d] border-b border-gray-100 dark:border-[#1e1a3a] px-4 py-3 flex items-center justify-between sticky top-0 z-10">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 vector-logo">
+                    <span class="text-white font-bold text-sm">V</span>
+                </div>
+                <h1 class="font-bold text-lg">Vector</h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <div class="flex items-center space-x-1 text-sm font-medium">
+                    <i class="fa-brands fa-ethereum text-purple-600"></i>
+                    <span id="balance">12.45 TON</span>
+                </div>
+                <button id="btn-theme" class="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-[#1e1a3a]">
+                    <i class="fa-solid fa-moon text-gray-600 dark:hidden"></i>
+                    <i class="fa-solid fa-sun text-yellow-400 hidden dark:inline"></i>
+                </button>
+                <button id="btn-profile" class="p-2 rounded-full hover:bg-purple-50 dark:hover:bg-[#1e1a3a]">
+                    <i class="fa-solid fa-user text-gray-600 dark:text-gray-300"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Categories (Top Menu) - только на главной -->
+        <div id="categories-menu" class="px-4 py-3">
+            <div class="category-grid">
+                <button class="flex flex-col items-center space-y-1 category-btn" data-category="code">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center strict-icon">
+                        <i class="fa-solid fa-code text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Код</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 category-btn" data-category="marketing">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center strict-icon">
+                        <i class="fa-solid fa-bullhorn text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Маркетинг</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 category-btn" data-category="copywriting">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center strict-icon">
+                        <i class="fa-solid fa-pen-nib text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Тексты</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 category-btn" data-category="design">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center strict-icon">
+                        <i class="fa-solid fa-palette text-purple-600 dark:text-purple-400"></i>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Дизайн</span>
+                </button>
+                <button class="flex flex-col items-center space-y-1 category-btn" data-category="other">
+                    <div class="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center strict-icon">
+                        <i class="fa-solid fa-ellipsis text-purple-600 dark:text-gray-300"></i>
+                    </div>
+                    <span class="text-xs text-gray-600 dark:text-gray-400">Ещё</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs - только на главной -->
+        <div id="tabs-section" class="px-4 py-2">
+            <div class="flex space-x-1">
+                <button class="tab-active flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn" data-tab="all">
+                    📋 Все задания
+                </button>
+                <button class="tab-inactive flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn" data-tab="vacancies">
+                    🧑‍💻 Вакансии
+                </button>
+                <button class="tab-inactive flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn" data-tab="microtasks">
+                    ⚡ Микрозадания
+                </button>
+            </div>
+        </div>
+
+        <!-- Compact Filter - только на главной -->
+        <div id="filter-section" class="px-4">
+            <div class="compact-filter">
+                <div class="filter-tag active">Все</div>
+                <div class="filter-tag">Python</div>
+                <div class="filter-tag">Дизайн</div>
+                <div class="filter-tag">Копирайтинг</div>
+                <div class="filter-tag">Маркетинг</div>
+                <div class="filter-tag">Telegram</div>
+                <div class="filter-tag">SEO</div>
+                <div class="filter-tag">Frontend</div>
+                <div class="filter-tag">Backend</div>
+            </div>
+        </div>
+
+        <!-- Content: Main Home Page -->
+        <div id="content-home" class="px-4 pb-16">
+            <div class="space-y-4 mt-2">
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">Разработка Telegram-бота</h3>
+                        <span class="category-tag bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">Python</span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Нужен бот для приёма заказов. Aiogram 3.x, PostgreSQL.</p>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">15–25 TON</span>
+                        <span class="text-xs bg-purple-100 dark:bg-[#1e1a3a] text-purple-600 dark:text-purple-300 px-2 py-1 rounded-full">3 дня</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#telegram</span>
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#бот</span>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-1.5 px-3 rounded text-xs font-medium transition">Отклик</button>
+                        <button class="flex-1 border border-gray-300 dark:border-[#444] text-gray-700 dark:text-gray-300 py-1.5 px-3 rounded text-xs font-medium">Подробнее</button>
+                    </div>
+                </div>
+
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">Дизайн логотипа для стартапа</h3>
+                        <span class="category-tag bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">Дизайн</span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Минимализм, тёплые тона, должно ассоциироваться с уютом.</p>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">8–12 TON</span>
+                        <span class="text-xs bg-purple-100 dark:bg-[#1e1a3a] text-purple-600 dark:text-purple-300 px-2 py-1 rounded-full">неделя</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#логотип</span>
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#брендинг</span>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-1.5 px-3 rounded text-xs font-medium transition">Отклик</button>
+                        <button class="flex-1 border border-gray-300 dark:border-[#444] text-gray-700 dark:text-gray-300 py-1.5 px-3 rounded text-xs font-medium">Подробнее</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content: Vacancies Tab -->
+        <div id="content-vacancies" class="px-4 pb-16 hidden">
+            <div class="space-y-4 mt-2">
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">Senior Python Developer</h3>
+                        <span class="category-tag bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">Python</span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Ищем опытного разработчика для работы над крупным проектом.</p>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">50–80 TON/мес</span>
+                        <span class="text-xs bg-purple-100 dark:bg-[#1e1a3a] text-purple-600 dark:text-purple-300 px-2 py-1 rounded-full">постоянно</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#python</span>
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#django</span>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-1.5 px-3 rounded text-xs font-medium transition">Отклик</button>
+                        <button class="flex-1 border border-gray-300 dark:border-[#444] text-gray-700 dark:text-gray-300 py-1.5 px-3 rounded text-xs font-medium">Подробнее</button>
+                    </div>
+                </div>
+
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">UX/UI Designer</h3>
+                        <span class="category-tag bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300">Дизайн</span>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Требуется дизайнер для создания интерфейсов мобильных приложений.</p>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">40–60 TON/мес</span>
+                        <span class="text-xs bg-purple-100 dark:bg-[#1e1a3a] text-purple-600 dark:text-purple-300 px-2 py-1 rounded-full">постоянно</span>
+                    </div>
+                    <div class="flex flex-wrap gap-1 mt-2">
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#дизайн</span>
+                        <span class="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded">#ux</span>
+                    </div>
+                    <div class="flex space-x-2 mt-3">
+                        <button class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-1.5 px-3 rounded text-xs font-medium transition">Отклик</button>
+                        <button class="flex-1 border border-gray-300 dark:border-[#444] text-gray-700 dark:text-gray-300 py-1.5 px-3 rounded text-xs font-medium">Подробнее</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content: Microtasks Tab -->
+        <div id="content-microtasks" class="px-4 pb-16 hidden">
+            <div class="space-y-4 mt-2">
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">Проверить 10 ссылок</h3>
+                        <span class="category-tag bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">Тестирование</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-orange-600 dark:text-orange-400 text-sm">0.5 TON</span>
+                        <span class="text-xs bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-2 py-1 rounded">~5 мин</span>
+                    </div>
+                    <button class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 rounded text-xs font-medium mt-2 transition">
+                        ✅ Взять в работу
+                    </button>
+                </div>
+
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">Перевести 500 слов</h3>
+                        <span class="category-tag bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300">Перевод</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-orange-600 dark:text-orange-400 text-sm">2.5 TON</span>
+                        <span class="text-xs bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-2 py-1 rounded">~30 мин</span>
+                    </div>
+                    <button class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 rounded text-xs font-medium mt-2 transition">
+                        ✅ Взять в работу
+                    </button>
+                </div>
+
+                <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-sm">Написать 5 заголовков для email</h3>
+                        <span class="category-tag bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300">Копирайтинг</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <span class="font-bold text-orange-600 dark:text-orange-400 text-sm">0.8 TON</span>
+                        <span class="text-xs bg-orange-100 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-2 py-1 rounded">~10 мин</span>
+                    </div>
+                    <button class="w-full bg-orange-600 hover:bg-orange-700 text-white py-2 rounded text-xs font-medium mt-2 transition">
+                        ✅ Взять в работу
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content: Category Services -->
+        <div id="content-category" class="px-4 pb-16 hidden">
+            <div class="mt-4">
+                <button id="back-to-home" class="flex items-center text-purple-600 dark:text-purple-400 text-sm mb-4">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Назад к главной
+                </button>
+                
+                <h2 class="text-xl font-bold mb-4">Услуги разработки</h2>
+                
+                <div class="space-y-4">
+                    <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-semibold text-sm">Разработка веб-приложений</h3>
+                            <span class="category-tag bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">Frontend</span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Создаю современные веб-приложения на React/Vue.js</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">От 15 TON</span>
+                            <span class="text-xs bg-purple-100 dark:bg-[#1e1a3a] text-purple-600 dark:text-purple-300 px-2 py-1 rounded-full">проект</span>
+                        </div>
+                        <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-xs font-medium mt-3 transition">
+                            Заказать услугу
+                        </button>
+                    </div>
+
+                    <div class="card bg-white dark:bg-[#1e1a3a] p-4 border border-gray-100 dark:border-[#2d294a]">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-semibold text-sm">API интеграция</h3>
+                            <span class="category-tag bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300">Backend</span>
+                        </div>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">Интегрирую сторонние API в ваши проекты</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="font-bold text-purple-600 dark:text-purple-400 text-sm">От 10 TON</span>
+                            <span class="text-xs bg-purple-100 dark:bg-[#1e1a3a] text-purple-600 dark:text-purple-300 px-2 py-1 rounded-full">задача</span>
+                        </div>
+                        <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded text-xs font-medium mt-3 transition">
+                            Заказать услугу
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content: Search -->
+        <div id="content-search" class="px-4 pb-16 hidden">
+            <div class="mt-4">
+                <div class="relative">
+                    <input type="text" placeholder="Поиск заданий, услуг, исполнителей..." class="w-full p-3 pl-10 rounded-lg border border-gray-300 dark:border-[#2d294a] bg-white dark:bg-[#1e1a3a]">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3.5 text-gray-400"></i>
+                </div>
+                
+                <div class="mt-4">
+                    <h3 class="font-semibold text-sm mb-2">Популярные запросы</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-xs">Python</span>
+                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-xs">Дизайн</span>
+                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-xs">Копирайтинг</span>
+                        <span class="px-3 py-1 bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-full text-xs">Telegram</span>
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold text-sm mb-2">Результаты поиска</h3>
+                    <div class="space-y-3">
+                        <div class="card bg-white dark:bg-[#1e1a3a] p-3 border border-gray-100 dark:border-[#2d294a]">
+                            <div class="flex justify-between">
+                                <span class="font-medium text-sm">Разработка Telegram-бота</span>
+                                <span class="text-purple-600 dark:text-purple-400 text-sm font-bold">25 TON</span>
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">#python #telegram</div>
+                        </div>
+                        
+                        <div class="card bg-white dark:bg-[#1e1a3a] p-3 border border-gray-100 dark:border-[#2d294a]">
+                            <div class="flex justify-between">
+                                <span class="font-medium text-sm">Дизайн логотипа</span>
+                                <span class="text-purple-600 dark:text-purple-400 text-sm font-bold">12 TON</span>
+                            </div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">#дизайн #логотип</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content: Create -->
+        <div id="content-create" class="px-4 pb-16 hidden">
+            <div class="mt-6">
+                <button id="back-to-home-create" class="flex items-center text-purple-600 dark:text-purple-400 text-sm mb-4">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Назад к главной
+                </button>
+                
+                <h2 class="text-xl font-bold text-center mb-6">Создать</h2>
+                
+                <div class="space-y-4">
+                    <div class="card bg-white dark:bg-[#1e1a3a] p-6 border border-gray-100 dark:border-[#2d294a] text-center">
+                        <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-briefcase text-purple-600 dark:text-purple-400 text-xl"></i>
+                        </div>
+                        <h3 class="font-semibold mb-2">Задание</h3>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">Найти исполнителя для выполнения задачи</p>
+                        <button class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg text-sm font-medium">
+                            Создать задание
+                        </button>
+                    </div>
+                    
+                    <div class="card bg-white dark:bg-[#1e1a3a] p-6 border border-gray-100 dark:border-[#2d294a] text-center">
+                        <div class="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <i class="fa-solid fa-hand-holding-heart text-green-600 dark:text-green-400 text-xl"></i>
+                        </div>
+                        <h3 class="font-semibold mb-2">Услугу</h3>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-4">Предложить свои услуги другим пользователям</p>
+                        <button class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg text-sm font-medium">
+                            Предложить услугу
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content: Messages -->
+        <div id="content-messages" class="px-4 pb-16 hidden">
+            <div class="mt-4">
+                <button id="back-to-home-messages" class="flex items-center text-purple-600 dark:text-purple-400 text-sm mb-4">
+                    <i class="fa-solid fa-arrow-left mr-2"></i>
+                    Назад к главной
+                </button>
+                
+                <h2 class="text-xl font-bold mb-4">Сообщения</h2>
+                
+                <div class="space-y-3">
+                    <div class="card bg-white dark:bg-[#1e1a3a] p-3 border border-gray-100 dark:border-[#2d294a] flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/20 flex items-center justify-center">
+                            <span class="text-purple-600 dark:text-purple-400 font-medium">А</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">Анна Петрова</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Привет! Готов выполнить ваш заказ...</div>
+                        </div>
+                        <div class="text-xs text-gray-400">12:45</div>
+                    </div>
+                    
+                    <div class="card bg-white dark:bg-[#1e1a3a] p-3 border border-gray-100 dark:border-[#2d294a] flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
+                            <span class="text-blue-600 dark:text-blue-400 font-medium">М</span>
+                        </div>
+                        <div class="flex-1">
+                            <div class="font-medium text-sm">Михаил Иванов</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400">Спасибо за сотрудничество!</div>
+                        </div>
+                        <div class="text-xs text-gray-400">Вчера</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-white dark:bg-[#1e1a3a] rounded-2xl w-11/12 max-w-sm p-6 mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">👤 Мой профиль</h2>
+                    <button id="close-profile" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Имя</label>
+                        <input type="text" value="Анна, студия дизайна" class="w-full p-2 border border-gray-300 dark:border-[#2d294a] rounded-lg text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Контакт</label>
+                        <input type="text" value="@annadesign" class="w-full p-2 border border-gray-300 dark:border-[#2d294a] rounded-lg text-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Роль</label>
+                        <div class="flex bg-purple-100 dark:bg-[#1e1a3a] p-1 rounded-lg">
+                            <button id="role-freelancer" class="flex-1 py-2 px-3 rounded-md text-sm font-medium bg-white dark:bg-[#1e1a3a]">Исполнитель</button>
+                            <button id="role-customer" class="flex-1 py-2 px-3 rounded-md text-sm font-medium">Заказчик</button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Баланс</label>
+                        <div class="text-xl font-bold text-purple-600 dark:text-purple-400">12.45 TON</div>
+                    </div>
+                </div>
+
+                <button class="w-full mt-6 bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-medium transition">
+                    Сохранить изменения
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="fixed bottom-0 left-0 right-0 z-20 bottom-nav">
+            <div class="nav-container">
+                <button class="nav-button active" id="nav-home">
+                    <i class="fa-solid fa-house nav-icon"></i>
+                    <span>Главная</span>
+                </button>
+                <button class="nav-button" id="nav-search">
+                    <i class="fa-solid fa-magnifying-glass nav-icon"></i>
+                    <span>Поиск</span>
+                </button>
+                <button class="nav-button" id="nav-create">
+                    <i class="fa-solid fa-plus nav-icon"></i>
+                    <span>Создать</span>
+                </button>
+                <button class="nav-button" id="nav-messages">
+                    <i class="fa-solid fa-message nav-icon"></i>
+                    <span>Сообщения</span>
+                </button>
+                <button class="nav-button" id="nav-profile-bottom">
+                    <i class="fa-solid fa-user nav-icon"></i>
+                    <span>Профиль</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Tab switching (на главной странице)
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const contentHome = document.getElementById('content-home');
+        const contentVacancies = document.getElementById('content-vacancies');
+        const contentMicrotasks = document.getElementById('content-microtasks');
+        const contentCategory = document.getElementById('content-category');
+        const contentSearch = document.getElementById('content-search');
+        const contentCreate = document.getElementById('content-create');
+        const contentMessages = document.getElementById('content-messages');
+        const categoriesMenu = document.getElementById('categories-menu');
+        const tabsSection = document.getElementById('tabs-section');
+        const filterSection = document.getElementById('filter-section');
+
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+                
+                // Update active tab
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    if (btn.dataset.tab === tab) {
+                        btn.className = 'tab-active flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn';
+                    } else {
+                        btn.className = 'tab-inactive flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn';
+                    }
+                });
+                
+                // Show content
+                contentHome.classList.add('hidden');
+                contentVacancies.classList.add('hidden');
+                contentMicrotasks.classList.add('hidden');
+                
+                if (tab === 'all') {
+                    contentHome.classList.remove('hidden');
+                } else if (tab === 'vacancies') {
+                    contentVacancies.classList.remove('hidden');
+                } else if (tab === 'microtasks') {
+                    contentMicrotasks.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Category menu
+        const categoryButtons = document.querySelectorAll('.category-btn');
+        categoryButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const category = button.dataset.category;
+                
+                // Hide main sections
+                categoriesMenu.classList.add('hidden');
+                tabsSection.classList.add('hidden');
+                filterSection.classList.add('hidden');
+                contentHome.classList.add('hidden');
+                contentVacancies.classList.add('hidden');
+                contentMicrotasks.classList.add('hidden');
+                contentSearch.classList.add('hidden');
+                contentCreate.classList.add('hidden');
+                contentMessages.classList.add('hidden');
+                
+                // Show category content
+                contentCategory.classList.remove('hidden');
+            });
+        });
+
+        // Back buttons
+        document.getElementById('back-to-home').addEventListener('click', () => {
+            contentCategory.classList.add('hidden');
+            categoriesMenu.classList.remove('hidden');
+            tabsSection.classList.remove('hidden');
+            filterSection.classList.remove('hidden');
+            contentHome.classList.remove('hidden');
+        });
+
+        document.getElementById('back-to-home-create').addEventListener('click', () => {
+            contentCreate.classList.add('hidden');
+            contentHome.classList.remove('hidden');
+            categoriesMenu.classList.remove('hidden');
+            tabsSection.classList.remove('hidden');
+            filterSection.classList.remove('hidden');
+        });
+
+        document.getElementById('back-to-home-messages').addEventListener('click', () => {
+            contentMessages.classList.add('hidden');
+            contentHome.classList.remove('hidden');
+            categoriesMenu.classList.remove('hidden');
+            tabsSection.classList.remove('hidden');
+            filterSection.classList.remove('hidden');
+        });
+
+        // Filter tags
+        const filterTags = document.querySelectorAll('.filter-tag');
+        filterTags.forEach(tag => {
+            tag.addEventListener('click', () => {
+                filterTags.forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+            });
+        });
+
+        // Profile Modal
+        const profileModal = document.getElementById('profile-modal');
+        const btnProfile = document.getElementById('btn-profile');
+        const closeProfile = document.getElementById('close-profile');
+        const roleFreelancer = document.getElementById('role-freelancer');
+        const roleCustomer = document.getElementById('role-customer');
+
+        btnProfile.addEventListener('click', () => {
+            profileModal.classList.remove('hidden');
+        });
+
+        closeProfile.addEventListener('click', () => {
+            profileModal.classList.add('hidden');
+        });
+
+        // Role switching
+        roleFreelancer.addEventListener('click', () => {
+            roleFreelancer.classList.add('bg-white', 'dark:bg-[#1e1a3a]');
+            roleFreelancer.classList.remove('bg-purple-100', 'dark:bg-[#1e1a3a]');
+            roleCustomer.classList.remove('bg-white', 'dark:bg-[#1e1a3a]');
+            roleCustomer.classList.add('bg-purple-100', 'dark:bg-[#1e1a3a]');
+        });
+
+        roleCustomer.addEventListener('click', () => {
+            roleCustomer.classList.add('bg-white', 'dark:bg-[#1e1a3a]');
+            roleCustomer.classList.remove('bg-purple-100', 'dark:bg-[#1e1a3a]');
+            roleFreelancer.classList.remove('bg-white', 'dark:bg-[#1e1a3a]');
+            roleFreelancer.classList.add('bg-purple-100', 'dark:bg-[#1e1a3a]');
+        });
+
+        // Bottom Navigation
+        const navButtons = document.querySelectorAll('.nav-button');
+        navButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active nav button
+                navButtons.forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+                
+                // Hide all content and main sections
+                categoriesMenu.classList.add('hidden');
+                tabsSection.classList.add('hidden');
+                filterSection.classList.add('hidden');
+                contentHome.classList.add('hidden');
+                contentVacancies.classList.add('hidden');
+                contentMicrotasks.classList.add('hidden');
+                contentCategory.classList.add('hidden');
+                contentSearch.classList.add('hidden');
+                contentCreate.classList.add('hidden');
+                contentMessages.classList.add('hidden');
+                
+                // Show appropriate content
+                if (button.id === 'nav-home') {
+                    categoriesMenu.classList.remove('hidden');
+                    tabsSection.classList.remove('hidden');
+                    filterSection.classList.remove('hidden');
+                    contentHome.classList.remove('hidden');
+                    // Reset tabs to show "Все задания" as active
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        if (btn.dataset.tab === 'all') {
+                            btn.className = 'tab-active flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn';
+                        } else {
+                            btn.className = 'tab-inactive flex-1 py-2.5 px-3 rounded-lg font-medium text-xs tab-btn';
+                        }
+                    });
+                } else if (button.id === 'nav-search') {
+                    contentSearch.classList.remove('hidden');
+                } else if (button.id === 'nav-create') {
+                    contentCreate.classList.remove('hidden');
+                } else if (button.id === 'nav-messages') {
+                    contentMessages.classList.remove('hidden');
+                } else if (button.id === 'nav-profile-bottom') {
+                    profileModal.classList.remove('hidden');
+                }
+            });
+        });
+
+        // Theme Toggle
+        const btnTheme = document.getElementById('btn-theme');
+        const body = document.body;
+
+        btnTheme.addEventListener('click', () => {
+            body.classList.toggle('dark');
+            const isDark = body.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            
+            // Update Telegram background
+            if (window.Telegram && window.Telegram.WebApp) {
+                document.body.style.backgroundColor = isDark ? '#120e2d' : '#f0f4ff';
+            }
+        });
+
+        // Load theme from localStorage
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+            body.classList.add('dark');
+        }
+
+        // Telegram Mini App init
+        if (window.Telegram && window.Telegram.WebApp) {
+            const webApp = window.Telegram.WebApp;
+            webApp.ready();
+            webApp.expand();
+            document.body.style.backgroundColor = body.classList.contains('dark') ? '#120e2d' : '#f0f4ff';
+        }
+    </script>
+</body>
+</html>
